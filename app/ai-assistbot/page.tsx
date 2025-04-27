@@ -29,6 +29,9 @@ const AiAssistBotPage = () => {
   // State for the placeholder text inside the paper div
   const [paperPlaceholder, setPaperPlaceholder] = useState<string>("Loading circuit engine...");
 
+  // State for forcing remount of the paper div
+  const [circuitKey, setCircuitKey] = useState(1);
+
   const cleanupCircuit = () => {
     if (circuitRef.current) {
       // Stop the simulation first
@@ -54,53 +57,66 @@ const AiAssistBotPage = () => {
   };
 
   const loadCircuit = (json: object) => {
+    // Increment key *before* cleanup/load to ensure the old div unmounts
+    setCircuitKey(prevKey => prevKey + 1);
+
     cleanupCircuit(); // Ensure previous circuit is cleared
 
-    if (typeof window === "undefined" || !(window as any).digitaljs) {
-      console.error("digitaljs library is not loaded or ready.");
-      setChatMessages(prev => [...prev, { sender: 'system', text: "Error: digitaljs library not loaded." }]);
-      setPaperPlaceholder("Error: digitaljs library not loaded."); // Show error in placeholder
-      return false; // Indicate failure
-    }
-    const digitaljs = (window as any).digitaljs;
+    // Use a timeout to allow React to process the state update (key change)
+    // and unmount the old component before digitaljs tries to render.
+    setTimeout(() => {
+      if (typeof window === "undefined" || !(window as any).digitaljs) {
+        console.error("digitaljs library is not loaded or ready.");
+        setChatMessages(prev => [...prev, { sender: 'system', text: "Error: digitaljs library not loaded." }]);
+        setPaperPlaceholder("Error: digitaljs library not loaded."); // Show error in placeholder
+        return false; // Indicate failure
+      }
+      const digitaljs = (window as any).digitaljs;
 
-    try {
-      const circuit = new digitaljs.Circuit(json);
-      circuitRef.current = circuit;
+      // Check if the paperRef (potentially new one after remount) exists
+      if (!paperRef.current) {
+        console.error("Paper container ref is not available after key change.");
+        setChatMessages(prev => [...prev, { sender: 'system', text: "Error: Circuit container not found." }]);
+        setPaperPlaceholder("Error: Circuit container not found."); // Show error in placeholder
+        return false; // Indicate failure
+      }
 
-      // Keep track of new papers
-      circuit.on("new:paper", (paper: any) => {
-        papersRef.current[paper.cid] = paper; // Store the paper reference
-        paper.on("element:pointerdblclick", (cellView: any) => {
-          (window as any).digitaljsCell = cellView.model;
-          console.info(
-            "You can now access the doubly clicked gate as digitaljsCell in your WebBrowser console!"
-          );
+      try {
+        const circuit = new digitaljs.Circuit(json);
+        circuitRef.current = circuit;
+
+        // Keep track of new papers
+        circuit.on("new:paper", (paper: any) => {
+          papersRef.current[paper.cid] = paper; // Store the paper reference
+          paper.on("element:pointerdblclick", (cellView: any) => {
+            (window as any).digitaljsCell = cellView.model;
+            console.info(
+              "You can now access the doubly clicked gate as digitaljsCell in your WebBrowser console!"
+            );
+          });
         });
-      });
 
-      circuit.on("remove:paper", (paper: any) => {
-        // Ensure paper is removed from our ref when digitaljs removes it
-        if (papersRef.current[paper.cid]) {
-          delete papersRef.current[paper.cid];
-        }
-      });
+        circuit.on("remove:paper", (paper: any) => {
+          // Ensure paper is removed from our ref when digitaljs removes it
+          if (papersRef.current[paper.cid]) {
+            delete papersRef.current[paper.cid];
+          }
+        });
 
-      if (paperRef.current) {
-        // Explicitly clear the container *before* digitaljs renders into it.
+        // Clear the (potentially new) container just in case, then display
         paperRef.current.innerHTML = "";
         circuit.displayOn(paperRef.current);
         setPaperPlaceholder(""); // Clear placeholder text after successful display
-      }
 
-      circuit.start();
-      return true; // Indicate success
-    } catch (error: any) {
-      console.error("Error loading/initializing digitaljs circuit:", error);
-      setChatMessages(prev => [...prev, { sender: 'system', text: `Error loading circuit: ${error.message}` }]);
-      setPaperPlaceholder(`Error loading circuit: ${error.message}`); // Show error in placeholder
-      return false; // Indicate failure
-    }
+        circuit.start();
+      } catch (error: any) {
+        console.error("Error loading/initializing digitaljs circuit:", error);
+        setChatMessages(prev => [...prev, { sender: 'system', text: `Error loading circuit: ${error.message}` }]);
+        setPaperPlaceholder(`Error loading circuit: ${error.message}`); // Show error in placeholder
+      }
+    }, 0);
+
+    return true; // Indicate that the load process was initiated
   };
 
   // Effect to cleanup circuit on unmount
@@ -119,12 +135,14 @@ const AiAssistBotPage = () => {
   useEffect(() => {
     if (!scriptLoaded) {
       setPaperPlaceholder("Loading circuit engine...");
-    } else if (!circuitRef.current) {
+    } else if (!circuitRef.current && !isGenerating) {
       setPaperPlaceholder("Circuit will appear here after generation.");
+    } else if (isGenerating) {
+      setPaperPlaceholder("Generating circuit...");
     } else {
       setPaperPlaceholder("");
     }
-  }, [scriptLoaded, circuitRef.current]);
+  }, [scriptLoaded, circuitRef.current, isGenerating]);
 
   const handleSendMessage = async () => {
     const messageText = chatInput.trim();
@@ -134,7 +152,6 @@ const AiAssistBotPage = () => {
     setChatMessages(prev => [...prev, newUserMessage]);
     setChatInput("");
     setIsGenerating(true);
-    setPaperPlaceholder("Generating circuit..."); // Update placeholder during generation
 
     try {
       // Call the dedicated API route
@@ -150,15 +167,18 @@ const AiAssistBotPage = () => {
         throw new Error(result.error || `API request failed with status ${response.status}`);
       }
 
-      if (result.circuitJson && result.explanation) {
-        const loadSuccess =true;// loadCircuit(result.circuitJson);
-        if (loadSuccess) {
-          setChatMessages(prev => [...prev, { sender: 'ai', text: result.explanation }]);
-        }
-      } else if (result.circuitJson) {
-        const loadSuccess = loadCircuit(result.circuitJson);
-        if (loadSuccess) {
-          setChatMessages(prev => [...prev, { sender: 'system', text: "Circuit loaded, but explanation was missing or invalid." }]);
+      if (result.circuitJson) {
+        const loadInitiated = loadCircuit(result.circuitJson);
+        if (loadInitiated) {
+          setTimeout(() => {
+            if (result.explanation) {
+              setChatMessages(prev => [...prev, { sender: 'ai', text: result.explanation }]);
+            } else {
+              setChatMessages(prev => [...prev, { sender: 'system', text: "Circuit loaded, but explanation was missing or invalid." }]);
+            }
+          }, 100);
+        } else {
+          throw new Error("Failed to initiate circuit loading.");
         }
       } else {
         throw new Error(result.error || "Received an unexpected response format from the AI.");
@@ -170,10 +190,7 @@ const AiAssistBotPage = () => {
       setChatMessages(prev => [...prev, { sender: 'system', text: `Error: ${errorMessage}` }]);
       setPaperPlaceholder(`Error: ${errorMessage}`); // Show error in placeholder
     } finally {
-      setIsGenerating(false);
-      if (!circuitRef.current && scriptLoaded) {
-        setPaperPlaceholder("Circuit generation failed. Please try again.");
-      }
+      setTimeout(() => setIsGenerating(false), 50);
     }
   };
 
@@ -198,6 +215,7 @@ const AiAssistBotPage = () => {
 
         {/* Circuit Display Area */}
         <div
+          key={circuitKey} // Force remount on key change
           ref={paperRef}
           id="paper"
           className="min-h-[300px] flex-grow border border-gray-300 w-full box-border bg-white rounded shadow flex items-center justify-center"
