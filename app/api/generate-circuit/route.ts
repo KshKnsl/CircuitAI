@@ -1,0 +1,188 @@
+import { NextResponse } from "next/server";
+
+// Define expected structure from Gemini
+const JSON_MARKER_START = "```json";
+const JSON_MARKER_END = "```";
+const EXPLANATION_MARKER = "--- Explanation ---";
+
+export async function POST(request: Request) {
+    try {
+        const { prompt: userPrompt } = await request.json();
+
+        if (!userPrompt) {
+            return NextResponse.json(
+                { error: "Prompt is required." },
+                { status: 400 }
+            );
+        }
+
+        // Refined prompt for Gemini
+        const generationPrompt = `You are an expert in digital logic circuits and the digitaljs library format. Generate a digitaljs circuit JSON object based on the following user request.
+
+**Instructions:**
+1. Analyze the user's request carefully.
+2. Create the corresponding circuit definition in the digitaljs JSON format. Ensure devices, connectors, and subcircuits (if needed) are correctly defined. Use standard components like 'Button', 'Lamp', 'And', 'Or', 'Xor', 'Not', 'Input', 'Output', 'Subcircuit'.
+3. **Output Format:** Your response MUST strictly follow this structure:
+        * First, provide the raw digitaljs JSON object enclosed in triple backticks with the language specifier \`json\`. Start the block immediately with \`\`\`json.
+        * After the JSON block, add a separator line exactly like this: \n${EXPLANATION_MARKER}\n
+        * Finally, provide a brief explanation of the generated circuit or any relevant notes. Do not add any text before the JSON block or after the explanation.
+
+**Example Response Structure:**
+
+${JSON_MARKER_START}
+{
+    "devices": { ... },
+    "connectors": [ ... ]
+}
+${JSON_MARKER_END}
+${EXPLANATION_MARKER}
+This is a simple AND gate circuit...
+
+**User Request:** "${userPrompt}"
+
+**Generate the response now:**`;
+
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            console.error("GEMINI_API_KEY is not set.");
+            return NextResponse.json(
+                { error: "API key not configured." },
+                { status: 500 }
+            );
+        }
+        console.log("GEMINI_API_KEY is set."); // Don't log the key itself in production
+        // Updated URL based on user request
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`; // Using 1.5-flash as 2.0-flash might not be available or intended
+
+        let response: Response;
+        try {
+            response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: generationPrompt }] }],
+                    // Optional: Add generationConfig if needed
+                    // generationConfig: {
+                    //   temperature: 0.7,
+                    //   topK: 1,
+                    //   topP: 1,
+                    //   maxOutputTokens: 2048,
+                    // },
+                    // Optional: Add safetySettings if needed
+                    // safetySettings: [
+                    //   { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                    //   // ... other categories
+                    // ],
+                }),
+            });
+        } catch (fetchError: any) {
+            // Catch network errors during fetch itself
+            console.error("Network error fetching Gemini API:", fetchError);
+            return NextResponse.json(
+                { error: "Network error connecting to AI service.", details: fetchError.message },
+                { status: 503 }
+            ); // Service Unavailable
+        }
+
+        if (!response.ok) {
+            // Log status and attempt to read error body for more details
+            const errorStatus = response.status;
+            let errorBody = await response.text().catch(() => "Could not read error body."); // Read body safely
+            console.error(`Gemini API request failed with status ${errorStatus}. Body:`, errorBody);
+            // Return a more informative error
+            return NextResponse.json(
+                { error: `Gemini API request failed with status ${errorStatus}.`, details: errorBody },
+                { status: errorStatus }
+            );
+        }
+
+        const data = await response.json();
+        // Log the received data structure
+        console.log("Gemini API Response Data:", JSON.stringify(data, null, 2));
+
+        // Improved access to generated text, handling potential variations
+        const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!generatedText) {
+            console.error("No generated text found in Gemini response:", JSON.stringify(data, null, 2)); // Log the full response structure for debugging
+            return NextResponse.json(
+                { error: "No content generated by AI." },
+                { status: 500 }
+            );
+        }
+        // Log the extracted text content
+        console.log("Generated Text:", generatedText);
+
+
+        // Parse the response based on markers
+        let circuitJsonString = null;
+        let explanation =
+            "AI did not provide an explanation in the expected format.";
+
+        const jsonStartIndex = generatedText.indexOf(JSON_MARKER_START);
+        const jsonEndIndex = generatedText.indexOf(
+            JSON_MARKER_END,
+            jsonStartIndex + JSON_MARKER_START.length
+        );
+        const explanationIndex = generatedText.indexOf(EXPLANATION_MARKER);
+
+        if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+            circuitJsonString = generatedText
+                .substring(jsonStartIndex + JSON_MARKER_START.length, jsonEndIndex)
+                .trim();
+        }
+
+        if (explanationIndex !== -1) {
+            explanation = generatedText
+                .substring(explanationIndex + EXPLANATION_MARKER.length)
+                .trim();
+        } else if (jsonEndIndex !== -1 && explanationIndex === -1) {
+            // If explanation marker is missing, take text after JSON block
+            explanation = generatedText
+                .substring(jsonEndIndex + JSON_MARKER_END.length)
+                .trim();
+            if (!explanation) explanation = "No explanation provided after JSON.";
+        }
+
+        if (!circuitJsonString) {
+            console.error("Could not find JSON block in response:", generatedText);
+            return NextResponse.json(
+                {
+                    error: "AI response did not contain a valid JSON block.",
+                    details: generatedText,
+                },
+                { status: 500 }
+            );
+        }
+
+        try {
+            const circuitJson = JSON.parse(circuitJsonString);
+            // Log the final parsed JSON and explanation
+            console.log("Parsed Circuit JSON:", circuitJson);
+            console.log("Parsed Explanation:", explanation);
+            // Return both JSON and explanation
+            return NextResponse.json({ circuitJson, explanation });
+        } catch (parseError: any) { // Catch specific error type
+            console.error("Failed to parse generated JSON:", parseError);
+            console.error("Raw JSON string:", circuitJsonString);
+            console.error("Full response:", generatedText);
+            return NextResponse.json(
+                {
+                    error: "AI generated invalid JSON.",
+                    details: circuitJsonString,
+                    explanation: explanation, // Include explanation even if JSON fails
+                    parseErrorMessage: parseError.message, // Include parse error message
+                },
+                { status: 500 }
+            );
+        }
+    } catch (error: any) {
+        console.error("Error in generate-circuit route:", error);
+        // Provide more specific error details if available
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return NextResponse.json(
+            { error: "Internal server error.", details: errorMessage },
+            { status: 500 }
+        );
+    }
+}
