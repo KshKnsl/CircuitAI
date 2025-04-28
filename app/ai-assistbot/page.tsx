@@ -4,52 +4,32 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import DigitalCircuitViewer from "@/components/DigitalCircuitViewer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const initialCircuitJson = {
   devices: {
-      dev0: { type: "Button", label: "a", net: "a", order: 0, bits: 1 },
-      dev1: { type: "Button", label: "b", net: "b", order: 1, bits: 1 },
-      dev2: { type: "Button", label: "cin", net: "cin", order: 2, bits: 1 },
-      dev3: { type: "Lamp", label: "s", net: "s", order: 3, bits: 1 },
-      dev4: { type: "Lamp", label: "cout", net: "cout", order: 4, bits: 1 },
-      dev5: { type: "Or", label: "or1", bits: 1 },
-      dev6: { type: "Subcircuit", label: "ha1", celltype: "halfadder" },
-      dev7: { type: "Subcircuit", label: "ha2", celltype: "halfadder" },
+    dev0: { type: "Button", label: "Input", net: "in", order: 0, bits: 1 },
+    dev1: { type: "Lamp", label: "Hello World!!", net: "out", order: 1, bits: 1 },
   },
   connectors: [
-      { to: { id: "dev6", port: "a" }, from: { id: "dev0", port: "out" }, name: "a" },
-      { to: { id: "dev6", port: "b" }, from: { id: "dev1", port: "out" }, name: "b" },
-      { to: { id: "dev7", port: "b" }, from: { id: "dev2", port: "out" }, name: "cin" },
-      { to: { id: "dev3", port: "in" }, from: { id: "dev7", port: "o" }, name: "s" },
-      { to: { id: "dev4", port: "in" }, from: { id: "dev5", port: "out" }, name: "cout" },
-      { to: { id: "dev5", port: "in1" }, from: { id: "dev6", port: "c" }, name: "c1" },
-      { to: { id: "dev5", port: "in2" }, from: { id: "dev7", port: "c" }, name: "c2" },
-      { to: { id: "dev7", port: "a" }, from: { id: "dev6", port: "o" }, name: "t" },
+    { to: { id: "dev1", port: "in" }, from: { id: "dev0", port: "out" }, name: "processing..." },
   ],
-  subcircuits: {
-      halfadder: {
-          devices: {
-              dev0: { type: "Input", label: "a", net: "a", order: 0, bits: 1 },
-              dev1: { type: "Input", label: "b", net: "b", order: 1, bits: 1 },
-              dev2: { type: "Output", label: "o", net: "o", order: 2, bits: 1 },
-              dev3: { type: "Output", label: "c", net: "c", order: 3, bits: 1 },
-              dev4: { type: "And", label: "and1", bits: 1 },
-              dev5: { type: "Xor", label: "xor1", bits: 1 },
-          },
-          connectors: [
-              { to: { id: "dev4", port: "in1" }, from: { id: "dev0", port: "out" }, name: "a_to_and" },
-              { to: { id: "dev5", port: "in1" }, from: { id: "dev0", port: "out" }, name: "a_to_xor" },
-              { to: { id: "dev4", port: "in2" }, from: { id: "dev1", port: "out" }, name: "b_to_and" },
-              { to: { id: "dev5", port: "in2" }, from: { id: "dev1", port: "out" }, name: "b_to_xor" },
-              { to: { id: "dev2", port: "in" }, from: { id: "dev5", port: "out" }, name: "o" },
-              { to: { id: "dev3", port: "in" }, from: { id: "dev4", port: "out" }, name: "c" },
-          ],
-      },
-  },
+  subcircuits: {},
 };
 interface ChatMessage {
   sender: 'user' | 'ai' | 'system';
   text: string;
+  isLoading?: boolean;
 }
 const AiAssistBotPage = () => {
   const [chatInput, setChatInput] = useState("");
@@ -60,6 +40,7 @@ const AiAssistBotPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [currentCircuitJson, setCurrentCircuitJson] = useState<object | null>(null);
+  const [isCircuitOpen, setIsCircuitOpen] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -75,6 +56,8 @@ const AiAssistBotPage = () => {
     setIsGenerating(true);
     setCurrentCircuitJson(null);
 
+    setChatMessages(prev => [...prev, { sender: 'ai', text: 'Generating response', isLoading: true }]);
+
     try {
       const response = await fetch('/api/generate-circuit', {
         method: 'POST',
@@ -83,7 +66,6 @@ const AiAssistBotPage = () => {
       });
 
       const result = await response.json();
-      console.log("AI response:", result);
       if (!response.ok) {
         const errorDetail = result.details || result.error || `API request failed with status ${response.status}`;
         throw new Error(errorDetail);
@@ -93,19 +75,19 @@ const AiAssistBotPage = () => {
         setCurrentCircuitJson(result.circuitJson);
 
         if (result.explanation) {
-          setChatMessages(prev => [...prev, { sender: 'ai', text: result.explanation }]);
+          setChatMessages(prev => [...prev.filter(msg => !msg.isLoading), { sender: 'ai', text: result.explanation }]);
         } else {
-          setChatMessages(prev => [...prev, { sender: 'system', text: "Circuit generated, but explanation was missing or invalid." }]);
+          setChatMessages(prev => [...prev.filter(msg => !msg.isLoading), { sender: 'system', text: "Circuit generated, but explanation was missing or invalid." }]);
         }
       } else {
         const errorDetail = result.details || result.error || "Received an unexpected response format from the AI.";
         throw new Error(errorDetail);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error processing AI generation:", error);
-      const errorMessage = error.message || "An unknown error occurred during circuit generation.";
-      setChatMessages(prev => [...prev, { sender: 'system', text: `Error: ${errorMessage}` }]);
+      const errorMessage = (error as Error).message || "An unknown error occurred during circuit generation.";
+      setChatMessages(prev => [...prev.filter(msg => !msg.isLoading), { sender: 'system', text: `Error: ${errorMessage}` }]);
     } finally {
       setTimeout(() => setIsGenerating(false), 50);
     }
@@ -118,11 +100,30 @@ const AiAssistBotPage = () => {
 
   return (
     <div className="flex flex-col md:flex-row h-screen max-h-screen overflow-hidden">
-      <div className="flex-grow flex flex-col overflow-auto p-4">
+      <div className="md:hidden flex items-center justify-center p-4">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline">View Circuit</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Digital Circuit</AlertDialogTitle>
+              <AlertDialogDescription>
+                Here's the circuit generated by the AI.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <DigitalCircuitViewer circuitJson={currentCircuitJson || initialCircuitJson} />
+            <AlertDialogFooter>
+              <AlertDialogCancel>Close</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+      <div className="flex-grow flex flex-col overflow-auto p-4 md:block hidden">
         <div className="flex-grow flex items-center justify-center">
           <div className="w-full max-w-5xl mx-auto bg-background rounded-lg shadow border border-border p-4">
             <DigitalCircuitViewer
-              circuitJson={initialCircuitJson}
+              circuitJson={currentCircuitJson || initialCircuitJson}
             />
           </div>
         </div>
@@ -144,12 +145,16 @@ const AiAssistBotPage = () => {
                   msg.sender === 'ai' ? 'bg-secondary text-secondary-foreground' :
                   'bg-accent text-accent-foreground text-sm italic'
                 }`}>
-                  {msg.text.split('\n').map((line, i, arr) => (
-                    <span key={i}>
-                      {line}
-                      {i < arr.length - 1 && <br />}
-                    </span>
-                  ))}
+                  {msg.isLoading ? (
+                    <span className="animate-pulse">{msg.text}</span>
+                  ) : (
+                    msg.text.split('\n').map((line, i, arr) => (
+                      <span key={i}>
+                        {line}
+                        {i < arr.length - 1 && <br />}
+                      </span>
+                    ))
+                  )}
                 </div>
               </div>
             ))}

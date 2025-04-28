@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Script from "next/script";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -15,23 +15,22 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
     const circuitRef = useRef<any>(null);
 
     const [isFixed, setIsFixed] = useState(false);
-    const [includeLayout, setIncludeLayout] = useState(true);
     const [scriptLoaded, setScriptLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    const cleanupCircuit = () => {
+    const cleanupCircuit = useCallback(() => {
         if (circuitRef.current) {
             try {
                 circuitRef.current.stop();
-            } catch (e) {
+            } catch (e: any) {
                 console.warn("Error stopping circuit during cleanup:", e);
             }
             circuitRef.current = null;
         }
-    };
+    }, []);
 
-    const loadOrUpdateCircuit = (currentJson: object | null | undefined) => {
+    const loadOrUpdateCircuit = useCallback((currentJson: object | null | undefined) => {
         if (!scriptLoaded || !paperRef.current) {
             setIsLoading(true);
             setErrorMsg(null);
@@ -57,10 +56,9 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
             const circuit = new digitaljs.Circuit(currentJson);
             circuitRef.current = circuit;
 
-            circuit.on("new:paper", (paper: any) => {
-                if (paper && typeof paper.fixed === 'function') {
-                    console.log(`Setting fixed mode to ${isFixed} on new paper`);
-                    paper.fixed(isFixed);
+            circuit.on("new:paper", (paper: unknown) => {
+                if (paper && typeof (paper as any).fixed === 'function') {
+                    (paper as any).fixed(isFixed);
                 }
             });
 
@@ -68,39 +66,37 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
             circuit.start();
 
             if (circuit.papers) {
-                Object.values(circuit.papers).forEach((p: any) => {
-                    if (p && typeof p.fixed === 'function') {
-                        p.fixed(isFixed);
+                Object.values(circuit.papers).forEach((p: unknown) => {
+                    if (p && typeof (p as any).fixed === 'function') {
+                        (p as any).fixed(isFixed);
                     }
                 });
             }
 
             setIsLoading(false);
-        } catch (error: any) {
-            console.error("Error loading/initializing digitaljs circuit:", error);
-            setErrorMsg(`Error loading circuit: ${error.message}`);
+        } catch (error: unknown) {
+            setErrorMsg(`Error loading circuit: ${(error as Error).message}`);
             if (digitalJsContainer) {
-                digitalJsContainer.innerHTML = `<p class="p-4 text-center text-destructive">Error loading circuit: ${error.message}</p>`;
+                digitalJsContainer.innerHTML = `<p class="p-4 text-center text-destructive">Error loading circuit: ${(error as Error).message}</p>`;
             }
             setIsLoading(false);
             circuitRef.current = null;
         }
-    };
+    }, [isFixed, cleanupCircuit, scriptLoaded]);
 
-    const applyFixedModeToPapers = (fixed: boolean) => {
+    const applyFixedModeToPapers = useCallback((fixed: boolean) => {
         if (circuitRef.current && circuitRef.current.papers) {
-            console.log(`Applying fixed mode: ${fixed} to all papers`);
             try {
-                Object.values(circuitRef.current.papers).forEach((p: any) => {
-                    if (p && typeof p.fixed === 'function') {
-                        p.fixed(fixed);
+                Object.values(circuitRef.current.papers).forEach((p: unknown) => {
+                    if (p && typeof (p as any).fixed === 'function') {
+                        (p as any).fixed(fixed);
                     }
                 });
-            } catch (e) {
+            } catch (e: any) {
                 console.warn("Error applying fixed mode:", e);
             }
         }
-    };
+    }, []);
 
     useEffect(() => {
         loadOrUpdateCircuit(circuitJson);
@@ -109,20 +105,18 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
         }, 100);
 
         return () => clearTimeout(timer);
-    }, [scriptLoaded, circuitJson]);
+    }, [scriptLoaded, circuitJson, isFixed, loadOrUpdateCircuit, applyFixedModeToPapers]);
 
     useEffect(() => {
         applyFixedModeToPapers(isFixed);
-    }, [isFixed]);
+    }, [isFixed, applyFixedModeToPapers]);
 
     useEffect(() => {
         return () => {
-            console.log("Component unmounting, stopping circuit.");
             if (circuitRef.current) {
                 try {
                     circuitRef.current.stop();
-                    console.log("Circuit stopped on unmount.");
-                } catch (e) {
+                } catch (e: any) {
                     console.warn("Error stopping circuit during unmount cleanup:", e);
                 }
                 circuitRef.current = null;
@@ -132,20 +126,18 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
 
     const handleFixedChange = (checked: boolean | "indeterminate") => {
         setIsFixed(!!checked);
+        handleSerializeReload();
     };
 
     const handleSerializeReload = () => {
         if (!circuitRef.current) return;
         try {
-            console.log("Serializing circuit with includeLayout =", includeLayout);
-            const currentJson = circuitRef.current.toJSON(includeLayout);
-            console.log(`Serialized JSON:`, currentJson);
+            const currentJson = circuitRef.current.toJSON(true);
             loadOrUpdateCircuit(currentJson);
-        } catch (error: any) {
-            console.error("Error during serialize/reload:", error);
-            setErrorMsg(`Error during serialize/reload: ${error.message}`);
+        } catch (error: unknown) {
+            setErrorMsg(`Error during serialize/reload: ${(error as Error).message}`);
             if (paperRef.current) {
-                paperRef.current.innerHTML = `<p class="p-4 text-center text-destructive">Error during serialize/reload: ${error.message}</p>`;
+                paperRef.current.innerHTML = `<p class="p-4 text-center text-destructive">Error during serialize/reload: ${(error as Error).message}</p>`;
             }
         }
     };
@@ -170,15 +162,14 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
                     setScriptLoaded(true);
                     setIsLoading(false);
                 }}
-                onError={(e) => {
-                    console.error("Error loading digitaljs script:", e);
+                onError={() => {
                     setErrorMsg("Error loading digitaljs script.");
                     setIsLoading(false);
                 }}
             />
 
             <div
-                className="h-[400px] w-full md:max-w-[800px] mx-auto box-border bg-background flex items-center justify-center text-muted-foreground relative overflow-auto"
+                className="h-[500px] mx-auto bg-background flex items-center justify-center text-muted-foreground"
             >
                 {showPlaceholder ? (
                     <p className="p-4 text-center">{getPlaceholderText()}</p>
@@ -198,19 +189,6 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
                     />
                     <Label htmlFor="fixed-mode-main" className="cursor-pointer text-xs" title="Fixed Mode">
                         <Lock className="h-4 w-4 inline mr-1" /> Fix Layout
-                    </Label>
-                </div>
-
-                <div className="flex items-center space-x-2 p-2 border border-input rounded sm:border-none sm:p-0">
-                    <Checkbox
-                        id="include-layout-main"
-                        checked={includeLayout}
-                        onCheckedChange={(checked) => setIncludeLayout(!!checked)}
-                        disabled={controlsDisabled}
-                        aria-label="Include Layout in Serialization"
-                    />
-                    <Label htmlFor="include-layout-main" className="cursor-pointer text-xs" title="Include Layout">
-                        Include Layout
                     </Label>
                 </div>
 

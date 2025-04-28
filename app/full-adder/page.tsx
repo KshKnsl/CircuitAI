@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Script from "next/script";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -8,13 +8,13 @@ const FullAdderPage = () => {
   const paperRef = useRef<HTMLDivElement>(null);
 
   const circuitRef = useRef<any>(null);
-  const papersRef = useRef<{ [key: string]: any }>({});
+  const papersRef = useRef<Record<string, any>>({});
 
   const [isFixed, setIsFixed] = useState(false);
   const [includeLayout, setIncludeLayout] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
-  const initialCircuitJson = {
+  const initialCircuitJson = useMemo(() => ({
     devices: {
       dev0: { type: "Button", label: "a", net: "a", order: 0, bits: 1 },
       dev1: { type: "Button", label: "b", net: "b", order: 1, bits: 1 },
@@ -111,13 +111,13 @@ const FullAdderPage = () => {
         ],
       },
     },
-  };
+  }), []);
 
   const applyFixedMode = (fixed: boolean) => {
-    Object.values(papersRef.current).forEach((p) => p?.fixed?.(fixed));
+    Object.values(papersRef.current).forEach((p: any) => p?.fixed?.(fixed));
   };
 
-  const loadCircuit = (json: object) => {
+  const loadCircuit = useCallback((json: object) => {
     if (typeof window === "undefined" || !(window as any).digitaljs) {
       console.error("digitaljs library is not loaded or ready.");
       return;
@@ -159,7 +159,7 @@ const FullAdderPage = () => {
     } catch (error) {
       console.error("Error loading/initializing digitaljs circuit:", error);
     }
-  };
+  }, [isFixed]);
 
   useEffect(() => {
     if (scriptLoaded) {
@@ -170,13 +170,13 @@ const FullAdderPage = () => {
         circuitRef.current.stop();
       }
     };
-  }, [scriptLoaded]);
+  }, [scriptLoaded, initialCircuitJson, loadCircuit]);
 
   useEffect(() => {
     if (scriptLoaded) {
         loadCircuit(initialCircuitJson);
     }
-  }, [initialCircuitJson, scriptLoaded]);
+  }, [initialCircuitJson, scriptLoaded, loadCircuit]);
 
 
   const handleFixedChange = (checked: boolean | "indeterminate") => {

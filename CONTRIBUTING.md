@@ -1,4 +1,4 @@
-# Contributing to AI Powered Circuit Creator
+# Contributing to CircuitsAI
 
 First off, thank you for considering contributing! Your help is appreciated.
 

@@ -59,12 +59,10 @@ The file `public/digital.js` is a crucial part of the AI Powered Circuit Creator
 
 2.  **Initialization:** The application code (in `src/`) takes this JSON and creates a simulation object like this:
     ```javascript
-    // Assuming 'circuitJson' holds the JSON structure from above
     const circuit = new digitaljs.Circuit(circuitJson);
     ```
 3.  **Display:** It then tells `digitaljs` where to draw the circuit diagram:
     ```javascript
-    // 'paperElement' is the DOM element (e.g., a <div>) where the circuit should be drawn
     circuit.displayOn(paperElement);
     ```
 4.  **Simulation:** Finally, it starts the real-time simulation:

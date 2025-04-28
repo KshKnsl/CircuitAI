@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-// Define expected structure from Gemini
 const JSON_MARKER_START = "```json";
 const JSON_MARKER_END = "```";
 const EXPLANATION_MARKER = "--- Explanation ---";
@@ -16,20 +15,141 @@ export async function POST(request: Request) {
             );
         }
 
-        // Refined prompt for Gemini with detailed structure example
         const generationPrompt = `You are an expert in digital logic circuits and the digitaljs library format. Generate a digitaljs circuit JSON object based on the following user request.
+
+**Input format**
+Circuits are represented using JSON. The top-level object has three keys, devices, connectors and subcircuits. Under devices is a list of all devices forming the circuit, represented as an object, where keys are (unique and internal) device names. Each device has a number of properties, which are represented by an object. A mandatory property is type, which specifies the type of the device. Example device:
+
+\`\`\`json
+"dev1": {
+    "type": "And",
+    "label": "AND1"
+}
+\`\`\`
+Under connectors is a list of connections between device ports, represented as an array of objects with two keys, from and to. Both keys map to an object with two keys, id and port; the first corresponds to a device name, and the second -- to a valid port name for the device. A connection must lead from an output port to an input port, and the bitwidth of both ports must be equal. Example connection:
+\`\`\`json
+{
+    "from": {
+        "id": "dev1",
+        "port": "out"
+    },
+    "to": {
+        "id": "dev2",
+        "port": "in"
+    }
+}
+\`\`\`
+Under subcircuits is a list of subcircuit definitions, represented as an object, where keys are unique subcircuit names. A subcircuit name can be used as a celltype for a device of type Subcircuit; this instantiates the subcircuit. A subcircuit definition follows the representation of whole circuits, with the exception that subcircuits cannot (currently) define their own subcircuits. A subcircuit can include Input and Output devices, these are mapped to ports on a subcircuit instance.
+
+**Device types**
+Unary gates: Not, Repeater
+Attributes: bits (natural number)
+Inputs: in (bits-bit)
+Outputs: out (bits-bit)
+N-ary gates: And, Nand, Or, Nor, Xor, Xnor
+Attributes: bits (natural number), inputs (natural number, default 2)
+Inputs: in1, in2 ... inN (bits-bit, N = inputs)
+Outputs: out (bits-bit)
+Reducing gates: AndReduce, NandReduce, OrReduce, NorReduce, XorReduce, XnorReduce
+Attributes: bits (natural number)
+Inputs: in (bits-bit)
+Outputs: out (1-bit)
+Bit shifts: ShiftLeft, ShiftRight
+Attributes: bits.in1, bits.in2 and bits.out (natural number), signed.in1, signed.in2, signed.out and fillx (boolean)
+Inputs: in1 (bits.in1-bit), in2 (bits.in2-bit)
+Outputs: out (bits.out-bit)
+Comparisons: Eq, Ne, Lt, Le, Gt, Ge
+Attributes: bits.in1 and bits.in2 (natural number), signed.in1 and signed.in2 (boolean)
+Inputs: in1 (bits.in1-bit), in2 (bits.in2-bit)
+Outputs: out (1-bit)
+Number constant: Constant
+Attributes: constant (binary string)
+Outputs: out (constant.length-bit)
+Unary arithmetic: Negation, UnaryPlus
+Attributes: bits.in and bits.out (natural number), signed (boolean)
+Inputs: in (bits.in-bit)
+Outputs: out (bits.out-bit)
+Binary arithmetic: Addition, Subtraction, Multiplication, Division, Modulo, Power
+Attributes: bits.in1, bits.in2 and bits.out (natural number), signed.in1 and signed.in2 (boolean)
+Inputs: in1 (bits.in1-bit), in2 (bits.in2-bit)
+Outputs: out (bits.out-bit)
+Multiplexer: Mux
+Attributes: bits.in, bits.sel (natural number)
+Inputs: in0 ... inN (bits.in-bit, N = 2**bits.sel-1), sel (bits.sel-bit)
+Outputs: out (bits.in-bit)
+One-hot multiplexer: Mux1Hot
+Attributes: bits.in, bits.sel (natural number)
+Inputs: in0 ... inN (bits.in-bit, N = bits.sel), sel (bits.sel-bit)
+Outputs: out (bits.in-bit)
+Sparse multiplexer: MuxSparse
+Attributes: bits.in, bits.sel (natural number), inputs (list of natural numbers), default_input (optional boolean)
+Inputs: in0 ... inN (bits.in-bit, N = inputs.length, +1 if default_input is true)
+Outputs: out (bits.in-bit)
+D flip-flop: Dff
+Attributes: bits (natural number), polarity.clock, polarity.arst, polarity.srst, polarity.aload, polarity.set, polarity.clr, polarity.enable, enable_srst (optional booleans), initial (optional binary string), arst_value, srst_value (optional binary string), no_data (optional boolean)
+Inputs: in (bits-bit), clk (1-bit, if polarity.clock is present), arst (1-bit, if polarity.arst is present), srst (1-bit, if polarity.srst is present), en (1-bit, if polarity.enable is present), set (1-bit, if polarity.set is present), clr (1-bit, if polarity.clr is present), ain (bits-bit, if polarity.aload is present), aload (1-bit, if polarity.aload is present)
+Outputs: out (bits-bit)
+Memory: Memory
+Attributes: bits, abits, words, offset (natural number), rdports (array of read port descriptors), wrports (array of write port descriptors), memdata (memory contents description)
+Read port descriptor attributes: enable_polarity, clock_polarity, arst_polarity, srst_polarity (optional booleans), init_value, arst_value, srst_value (optional binary strings), transparent, collision (optional booleans or arrays of booleans)
+Write port descriptor attributes: enable_polarity, clock_polarity, no_bit_enable (optional booleans)
+Inputs (per read port): rdKaddr (abits-bit), rdKen (1-bit, if enable_polarity is present), rdKclk (1-bit, if clock_polarity is present), rdKarst (1-bit, if arst_polarity is present), rdKsrst (1-bit, if srst_polarity is present)
+Outputs (per read port): rdKdata (bits-bit)
+Inputs (per write port): wrKaddr (abits-bit), wrKdata (bits-bit), wrKen (1-bit (when no_bit_enable is true) or bits-bit (otherwise), if enable_polarity is present), wrKclk (1-bit, if clock_polarity is present)
+Clock source: Clock
+Outputs: out (1-bit)
+Button input: Button
+Outputs: out (1-bit)
+Lamp output: Lamp
+Inputs: in (1-bit)
+Number input: NumEntry
+Attributes: bits (natural number), numbase (string)
+Outputs: out (bits-bit)
+Number output: NumDisplay
+Attributes: bits (natural number), numbase (string)
+Inputs: in (bits-bit)
+Subcircuit input: Input
+Attributes: bits (natural number)
+Outputs: out (bits-bit)
+Subcircuit output: Output
+Attributes: bits (natural number)
+Inputs: in (bits-bit)
+7 segment display output: Display7
+Inputs: bits (8-bit only - most significant bit controls decimal point LED)
+Bus grouping: BusGroup
+Attributes: groups (array of natural numbers)
+Inputs: in0 (groups[0]-bit) ... inN (groups[N]-bit)
+Outputs: out (sum-of-groups-bit)
+Bus ungrouping: BusUngroup
+Attributes: groups (array of natural numbers)
+Inputs: in (sum-of-groups-bit)
+Outputs: out0 (groups[0]-bit) ... outN (groups[N]-bit)
+Bus slicing: BusSlice
+Attributes: slice.first, slice.count, slice.total (natural number)
+Inputs: in (slice.total-bit)
+Outputs: out (slice.count-bit)
+Zero- and sign-extension: ZeroExtend, SignExtend
+Attributes: extend.input, extend.output (natural number)
+Inputs: in (extend.input-bit)
+Outputs: out (extend.output-bit)
+Finite state machines: FSM
+Attributes: bits.in, bits.out, states, init_state, current_state (natural number), trans_table (array of transition descriptors)
+Transition descriptor attributes: ctrl_in, ctrl_out (binary strings), state_in, state_out (natural numbers)
+Inputs: clk (1-bit), arst (1-bit), in (bits.in-bit)
+Outputs: out (bits.out-bit)
 
 **Instructions:**
 1.  Analyze the user's request carefully.
-2.  Create the corresponding circuit definition in the digitaljs JSON format.
-3.  The JSON object **MUST** have a top-level structure containing 'devices' (object) and 'connectors' (array). It **MAY** also contain 'subcircuits' (object) if needed.
-4.  **Devices Object:** Keys are unique device IDs (e.g., "dev0", "dev1"). Values are objects with properties like 'type' (string, e.g., 'Button', 'Lamp', 'And', 'Or', 'Xor', 'Not', 'Input', 'Output', 'Subcircuit'), 'label' (string), 'net' (string, optional), 'order' (number, optional), 'bits' (number, usually 1), 'celltype' (string, required for 'Subcircuit' type).
-5.  **Connectors Array:** Each element is an object defining a wire connection. It **MUST** have 'to' (object with 'id' and 'port' strings) and 'from' (object with 'id' and 'port' strings). It **MAY** have a 'name' (string).
-6.  **Subcircuits Object (Optional):** Keys are subcircuit names (e.g., "halfadder"). Values are objects defining the subcircuit structure, containing their own 'devices' and 'connectors' following the same rules.
-7.  **Output Format:** Your response **MUST** strictly follow this structure:
+2.  If the user's request describes a valid digital logic circuit, create the corresponding circuit definition in the digitaljs JSON format.
+3.  If the user's request is not related to a digital logic circuit or is a greeting, generate a dummy circuit with a single lamp that is always on. Provide a human-like response in the explanation, acknowledging the user's input or greeting.
+4.  The JSON object **MUST** have a top-level structure containing 'devices' (object) and 'connectors' (array). It **MAY** also contain 'subcircuits' (object) if needed.
+5.  **Devices Object:** Keys are unique device IDs (e.g., "dev0", "dev1"). Values are objects with properties like 'type' (string, e.g., 'Button', 'Lamp', 'And', 'Or', 'Xor', 'Not', 'Input', 'Output', 'Subcircuit'), 'label' (string), 'net' (string, optional), 'order' (number, optional), 'bits' (number, optional), 'celltype' (string, required for 'Subcircuit' type).
+6.  **Connectors Array:** Each element is an object defining a wire connection. It **MUST** have 'to' (object with 'id' and 'port' strings) and 'from' (object with 'id' and 'port' strings). It **MAY** have a 'name' (string).
+7.  **Subcircuits Object (Optional):** Keys are subcircuit names (e.g., "halfadder"). Values are objects defining the subcircuit structure, containing their own 'devices' and 'connectors' following the same rules.
+8.  **Output Format:** Your response **MUST** strictly follow this structure:
     *   First, provide the raw digitaljs JSON object enclosed in triple backticks with the language specifier \`json\`. Start the block immediately with \`\`\`json. Do not add any text before this block.
     *   After the JSON block, add a separator line exactly like this: \n${EXPLANATION_MARKER}\n
-    *   Finally, provide a brief explanation of the generated circuit or any relevant notes. Do not add any text after the explanation.
+    *   Finally, provide a brief explanation of the generated circuit, focusing on its functionality, the logic it implements, and how the components interact to achieve the desired behavior. Avoid describing the JSON structure itself unless it is a dummy circuit. If it is a dummy circuit, provide a human-like response. Do not add any text after the explanation.
 
 **Example of a Valid Full Adder JSON Structure:**
 
@@ -92,9 +212,8 @@ This is a full adder circuit constructed using two half adder subcircuits...
                 { status: 500 }
             );
         }
-        console.log("GEMINI_API_KEY is set."); // Don't log the key itself in production
-        // Updated URL based on user request
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`; // Using 1.5-flash as 2.0-flash might not be available or intended
+        console.log("GEMINI_API_KEY is set.");
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         let response: Response;
         try {
@@ -103,35 +222,20 @@ This is a full adder circuit constructed using two half adder subcircuits...
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: generationPrompt }] }],
-                    // Optional: Add generationConfig if needed
-                    // generationConfig: {
-                    //   temperature: 0.7,
-                    //   topK: 1,
-                    //   topP: 1,
-                    //   maxOutputTokens: 2048,
-                    // },
-                    // Optional: Add safetySettings if needed
-                    // safetySettings: [
-                    //   { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-                    //   // ... other categories
-                    // ],
                 }),
             });
-        } catch (fetchError: any) {
-            // Catch network errors during fetch itself
+        } catch (fetchError: unknown) {
             console.error("Network error fetching Gemini API:", fetchError);
             return NextResponse.json(
-                { error: "Network error connecting to AI service.", details: fetchError.message },
+                { error: "Network error connecting to AI service.", details: String(fetchError) },
                 { status: 503 }
-            ); // Service Unavailable
+            ); 
         }
 
         if (!response.ok) {
-            // Log status and attempt to read error body for more details
             const errorStatus = response.status;
-            let errorBody = await response.text().catch(() => "Could not read error body."); // Read body safely
+            const errorBody = await response.text().catch(() => "Could not read error body.");
             console.error(`Gemini API request failed with status ${errorStatus}. Body:`, errorBody);
-            // Return a more informative error
             return NextResponse.json(
                 { error: `Gemini API request failed with status ${errorStatus}.`, details: errorBody },
                 { status: errorStatus }
@@ -139,24 +243,19 @@ This is a full adder circuit constructed using two half adder subcircuits...
         }
 
         const data = await response.json();
-        // Log the received data structure
         console.log("Gemini API Response Data:", JSON.stringify(data, null, 2));
 
-        // Improved access to generated text, handling potential variations
         const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!generatedText) {
-            console.error("No generated text found in Gemini response:", JSON.stringify(data, null, 2)); // Log the full response structure for debugging
+            console.error("No generated text found in Gemini response:", JSON.stringify(data, null, 2)); 
             return NextResponse.json(
                 { error: "No content generated by AI." },
                 { status: 500 }
             );
         }
-        // Log the extracted text content
         console.log("Generated Text:", generatedText);
 
-
-        // Parse the response based on markers
         let circuitJsonString = null;
         let explanation =
             "AI did not provide an explanation in the expected format.";
@@ -179,7 +278,6 @@ This is a full adder circuit constructed using two half adder subcircuits...
                 .substring(explanationIndex + EXPLANATION_MARKER.length)
                 .trim();
         } else if (jsonEndIndex !== -1 && explanationIndex === -1) {
-            // If explanation marker is missing, take text after JSON block
             explanation = generatedText
                 .substring(jsonEndIndex + JSON_MARKER_END.length)
                 .trim();
@@ -199,12 +297,10 @@ This is a full adder circuit constructed using two half adder subcircuits...
 
         try {
             const circuitJson = JSON.parse(circuitJsonString);
-            // Log the final parsed JSON and explanation
             console.log("Parsed Circuit JSON:", circuitJson);
             console.log("Parsed Explanation:", explanation);
-            // Return both JSON and explanation
             return NextResponse.json({ circuitJson, explanation });
-        } catch (parseError: any) { // Catch specific error type
+        } catch (parseError: unknown) { 
             console.error("Failed to parse generated JSON:", parseError);
             console.error("Raw JSON string:", circuitJsonString);
             console.error("Full response:", generatedText);
@@ -212,15 +308,14 @@ This is a full adder circuit constructed using two half adder subcircuits...
                 {
                     error: "AI generated invalid JSON.",
                     details: circuitJsonString,
-                    explanation: explanation, // Include explanation even if JSON fails
-                    parseErrorMessage: parseError.message, // Include parse error message
+                    explanation: explanation,
+                    parseErrorMessage: String(parseError),
                 },
                 { status: 500 }
             );
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error in generate-circuit route:", error);
-        // Provide more specific error details if available
         const errorMessage = error instanceof Error ? error.message : String(error);
         return NextResponse.json(
             { error: "Internal server error.", details: errorMessage },

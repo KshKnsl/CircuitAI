@@ -16,7 +16,7 @@ export default function Home() {
       <section className="w-full py-12 md:py-24 lg:py-32 border-b">
         <div className="container px-4 md:px-6 mx-auto flex flex-col items-center text-center gap-4">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-            GateGPT AI
+            CircuitsAI
           </h1>
           <p className="max-w-[700px] text-lg md:text-xl text-muted-foreground">
             The AI-powered logic gate simulator – design, simulate, and learn digital circuits with ease.

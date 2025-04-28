@@ -2,10 +2,9 @@
 <!-- [![Build Status](<badge-url>)](<link-url>) -->
 <!-- [![License: MIT](<badge-url>)](<link-url>) -->
 
-# AI Powered Circuit Creator
+# CircuitsAI
 
 This project is an AI-powered circuit creator that leverages DigitalJS for circuit simulation and visualization. Built with Next.js and Turbopack for rapid development, it provides an interactive and user-friendly interface for designing and simulating electronic circuits using natural language prompts or guided design flows.
-
 
 ## Features
 - **AI-Assisted Design:** Describe circuit requirements in natural language, and the AI suggests components and connections.

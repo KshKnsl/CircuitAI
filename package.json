@@ -1,7 +1,8 @@
 {
-  "name": "gate-gpt",
+  "name": "circuitsai",
   "version": "0.1.0",
   "private": true,
+  "description": "An AI-powered circuit creator and simulator.",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -9,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.11",
     "@radix-ui/react-checkbox": "^1.2.3",
     "@radix-ui/react-label": "^2.1.4",
     "@radix-ui/react-slot": "^1.2.0",
