@@ -16,27 +16,69 @@ export async function POST(request: Request) {
             );
         }
 
-        // Refined prompt for Gemini
+        // Refined prompt for Gemini with detailed structure example
         const generationPrompt = `You are an expert in digital logic circuits and the digitaljs library format. Generate a digitaljs circuit JSON object based on the following user request.
 
 **Instructions:**
-1. Analyze the user's request carefully.
-2. Create the corresponding circuit definition in the digitaljs JSON format. Ensure devices, connectors, and subcircuits (if needed) are correctly defined. Use standard components like 'Button', 'Lamp', 'And', 'Or', 'Xor', 'Not', 'Input', 'Output', 'Subcircuit'.
-3. **Output Format:** Your response MUST strictly follow this structure:
-        * First, provide the raw digitaljs JSON object enclosed in triple backticks with the language specifier \`json\`. Start the block immediately with \`\`\`json.
-        * After the JSON block, add a separator line exactly like this: \n${EXPLANATION_MARKER}\n
-        * Finally, provide a brief explanation of the generated circuit or any relevant notes. Do not add any text before the JSON block or after the explanation.
+1.  Analyze the user's request carefully.
+2.  Create the corresponding circuit definition in the digitaljs JSON format.
+3.  The JSON object **MUST** have a top-level structure containing 'devices' (object) and 'connectors' (array). It **MAY** also contain 'subcircuits' (object) if needed.
+4.  **Devices Object:** Keys are unique device IDs (e.g., "dev0", "dev1"). Values are objects with properties like 'type' (string, e.g., 'Button', 'Lamp', 'And', 'Or', 'Xor', 'Not', 'Input', 'Output', 'Subcircuit'), 'label' (string), 'net' (string, optional), 'order' (number, optional), 'bits' (number, usually 1), 'celltype' (string, required for 'Subcircuit' type).
+5.  **Connectors Array:** Each element is an object defining a wire connection. It **MUST** have 'to' (object with 'id' and 'port' strings) and 'from' (object with 'id' and 'port' strings). It **MAY** have a 'name' (string).
+6.  **Subcircuits Object (Optional):** Keys are subcircuit names (e.g., "halfadder"). Values are objects defining the subcircuit structure, containing their own 'devices' and 'connectors' following the same rules.
+7.  **Output Format:** Your response **MUST** strictly follow this structure:
+    *   First, provide the raw digitaljs JSON object enclosed in triple backticks with the language specifier \`json\`. Start the block immediately with \`\`\`json. Do not add any text before this block.
+    *   After the JSON block, add a separator line exactly like this: \n${EXPLANATION_MARKER}\n
+    *   Finally, provide a brief explanation of the generated circuit or any relevant notes. Do not add any text after the explanation.
 
-**Example Response Structure:**
+**Example of a Valid Full Adder JSON Structure:**
 
 ${JSON_MARKER_START}
 {
-    "devices": { ... },
-    "connectors": [ ... ]
+  "devices": {
+    "dev0": { "type": "Button", "label": "a", "net": "a", "order": 0, "bits": 1 },
+    "dev1": { "type": "Button", "label": "b", "net": "b", "order": 1, "bits": 1 },
+    "dev2": { "type": "Button", "label": "cin", "net": "cin", "order": 2, "bits": 1 },
+    "dev3": { "type": "Lamp", "label": "s", "net": "s", "order": 3, "bits": 1 },
+    "dev4": { "type": "Lamp", "label": "cout", "net": "cout", "order": 4, "bits": 1 },
+    "dev5": { "type": "Or", "label": "or1", "bits": 1 },
+    "dev6": { "type": "Subcircuit", "label": "ha1", "celltype": "halfadder" },
+    "dev7": { "type": "Subcircuit", "label": "ha2", "celltype": "halfadder" }
+  },
+  "connectors": [
+    { "to": { "id": "dev6", "port": "a" }, "from": { "id": "dev0", "port": "out" }, "name": "a" },
+    { "to": { "id": "dev6", "port": "b" }, "from": { "id": "dev1", "port": "out" }, "name": "b" },
+    { "to": { "id": "dev7", "port": "b" }, "from": { "id": "dev2", "port": "out" }, "name": "cin" },
+    { "to": { "id": "dev3", "port": "in" }, "from": { "id": "dev7", "port": "o" }, "name": "s" },
+    { "to": { "id": "dev4", "port": "in" }, "from": { "id": "dev5", "port": "out" }, "name": "cout" },
+    { "to": { "id": "dev5", "port": "in1" }, "from": { "id": "dev6", "port": "c" }, "name": "c1" },
+    { "to": { "id": "dev5", "port": "in2" }, "from": { "id": "dev7", "port": "c" }, "name": "c2" },
+    { "to": { "id": "dev7", "port": "a" }, "from": { "id": "dev6", "port": "o" }, "name": "t" }
+  ],
+  "subcircuits": {
+    "halfadder": {
+      "devices": {
+        "dev0": { "type": "Input", "label": "a", "net": "a", "order": 0, "bits": 1 },
+        "dev1": { "type": "Input", "label": "b", "net": "b", "order": 1, "bits": 1 },
+        "dev2": { "type": "Output", "label": "o", "net": "o", "order": 2, "bits": 1 },
+        "dev3": { "type": "Output", "label": "c", "net": "c", "order": 3, "bits": 1 },
+        "dev4": { "type": "And", "label": "and1", "bits": 1 },
+        "dev5": { "type": "Xor", "label": "xor1", "bits": 1 }
+      },
+      "connectors": [
+        { "to": { "id": "dev4", "port": "in1" }, "from": { "id": "dev0", "port": "out" }, "name": "a_to_and" },
+        { "to": { "id": "dev5", "port": "in1" }, "from": { "id": "dev0", "port": "out" }, "name": "a_to_xor" },
+        { "to": { "id": "dev4", "port": "in2" }, "from": { "id": "dev1", "port": "out" }, "name": "b_to_and" },
+        { "to": { "id": "dev5", "port": "in2" }, "from": { "id": "dev1", "port": "out" }, "name": "b_to_xor" },
+        { "to": { "id": "dev2", "port": "in" }, "from": { "id": "dev5", "port": "out" }, "name": "o" },
+        { "to": { "id": "dev3", "port": "in" }, "from": { "id": "dev4", "port": "out" }, "name": "c" }
+      ]
+    }
+  }
 }
 ${JSON_MARKER_END}
 ${EXPLANATION_MARKER}
-This is a simple AND gate circuit...
+This is a full adder circuit constructed using two half adder subcircuits...
 
 **User Request:** "${userPrompt}"
 

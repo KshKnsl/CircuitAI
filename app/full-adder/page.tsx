@@ -1,13 +1,13 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import Script from "next/script"; // Import the Script component
-import { Checkbox } from "@/components/ui/checkbox"; // Import Shadcn Checkbox
-import { Label } from "@/components/ui/label"; // Import Shadcn Label for consistency
+import Script from "next/script";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const FullAdderPage = () => {
   const paperRef = useRef<HTMLDivElement>(null);
 
-  const circuitRef = useRef<any>(null); // Replace 'any' with actual digitaljs types if available
+  const circuitRef = useRef<any>(null);
   const papersRef = useRef<{ [key: string]: any }>({});
 
   const [isFixed, setIsFixed] = useState(false);
@@ -113,15 +113,6 @@ const FullAdderPage = () => {
     },
   };
 
-  const cleanupCircuit = () => {
-    if (circuitRef.current) {
-      circuitRef.current.stop();
-    }
-    circuitRef.current = null;
-    papersRef.current = {};
-    if (paperRef.current) paperRef.current.innerHTML = "";
-  };
-
   const applyFixedMode = (fixed: boolean) => {
     Object.values(papersRef.current).forEach((p) => p?.fixed?.(fixed));
   };
@@ -133,7 +124,12 @@ const FullAdderPage = () => {
     }
     const digitaljs = (window as any).digitaljs;
 
-    cleanupCircuit();
+    if (circuitRef.current) {
+      circuitRef.current.stop();
+    }
+    papersRef.current = {};
+    if (paperRef.current) paperRef.current.innerHTML = "";
+
 
     try {
       const circuit = new digitaljs.Circuit(json);
@@ -170,19 +166,27 @@ const FullAdderPage = () => {
       loadCircuit(initialCircuitJson);
     }
     return () => {
-      cleanupCircuit();
+      if (circuitRef.current) {
+        circuitRef.current.stop();
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptLoaded]);
 
+  useEffect(() => {
+    if (scriptLoaded) {
+        loadCircuit(initialCircuitJson);
+    }
+  }, [initialCircuitJson, scriptLoaded]);
+
+
   const handleFixedChange = (checked: boolean | "indeterminate") => {
-    const newChecked = !!checked; // Convert 'indeterminate' to false if necessary
+    const newChecked = !!checked;
     setIsFixed(newChecked);
     applyFixedMode(newChecked);
   };
 
   const handleLayoutChange = (checked: boolean | "indeterminate") => {
-    setIncludeLayout(!!checked); // Convert 'indeterminate' to false if necessary
+    setIncludeLayout(!!checked);
   };
 
   const handleSerializeReload = () => {

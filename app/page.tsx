@@ -1,56 +1,97 @@
-import Image from "next/image";
 import Link from "next/link";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CircuitBoard, Code, FlaskConical, ArrowRight } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6 sm:p-12 bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-neutral-900 dark:via-black dark:to-neutral-800">
-      <div className="text-center z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex flex-col">
-
-        <div className="mb-12">
-          {/* Consider adding a logo here if available */}
-          {/* <Image src="/logo.svg" alt="GateGPT Logo" width={150} height={50} className="mx-auto mb-6" /> */}
-          <h1 className="text-4xl sm:text-6xl font-bold text-blue-800 dark:text-blue-300">
-            Welcome to GateGPT AI
+    <main className="flex min-h-screen flex-col bg-background">
+      {/* Hero Section */}
+      <section className="w-full py-12 md:py-24 lg:py-32 border-b">
+        <div className="container px-4 md:px-6 mx-auto flex flex-col items-center text-center gap-4">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            GateGPT AI
           </h1>
-          <p className="mt-4 text-lg sm:text-2xl text-gray-700 dark:text-gray-200">
-            The AI-powered logic gate simulator – design, simulate, and learn with ease.
+          <p className="max-w-[700px] text-lg md:text-xl text-muted-foreground">
+            The AI-powered logic gate simulator – design, simulate, and learn digital circuits with ease.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 mt-6">
+            <Button asChild size="lg" className="gap-2">
+              <Link href="/ai-assistbot">
+                Launch AI Circuit Builder <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/full-adder">
+                View Full Adder Example
+              </Link>
+            </Button>
+          </div>
         </div>
+      </section>
 
-        {/* Navigation Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-12">
-          <Link
-            href="/full-adder" // Link to the Full Adder example page
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow-md hover:shadow-lg text-lg"
-          >
-            View Full Adder Example
-          </Link>
-          <Link
-            href="/ai-assistbot" // Link to the AI Assistant page
-            className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition duration-200 shadow-md hover:shadow-lg text-lg"
-          >
-            Launch AI Circuit Builder
-          </Link>
+      {/* Features Section */}
+      <section className="container px-4 md:px-6 py-12 mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="flex flex-col h-full">
+            <CardHeader>
+              <CircuitBoard className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Interactive Visualization</CardTitle>
+              <CardDescription>
+                See your circuits come to life in a responsive, interactive environment
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <p className="text-muted-foreground">
+                Visualize logic gates, connections, and signal flow with our intuitive interface. 
+                Interact directly with inputs to see outputs change in real-time.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="flex flex-col h-full">
+            <CardHeader>
+              <Code className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>AI Circuit Generation</CardTitle>
+              <CardDescription>
+                Describe the circuit you want and let AI build it for you
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <p className="text-muted-foreground">
+                Simply describe the circuit you need, and our AI assistant will generate a functional design instantly. 
+                Experiment with different prompts to explore various circuit configurations.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="flex flex-col h-full">
+            <CardHeader>
+              <FlaskConical className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Simulate and Learn</CardTitle>
+              <CardDescription>
+                Explore pre-built examples and modify circuits in real-time
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <p className="text-muted-foreground">
+                Dive into pre-built examples like the Full Adder to understand fundamental concepts. 
+                Modify existing circuits or build your own from scratch to deepen your knowledge.
+              </p>
+            </CardContent>
+          </Card>
         </div>
+      </section>
 
-        {/* Optional: Add a section describing features */}
-        <div className="mt-16 text-left max-w-3xl w-full">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Features</h2>
-          <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300 text-lg">
-            <li>Visualize logic circuits with an interactive interface.</li>
-            <li>Generate circuits instantly using AI based on your descriptions.</li>
-            <li>Explore pre-built examples like the Full Adder.</li>
-            <li>Modify and simulate circuits in real-time.</li>
-          </ul>
-        </div>
-
-        {/* Remove or repurpose the bottom placeholder div */}
-        {/* <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none mt-12">
-        </div> */}
-        <footer className="mt-16 text-gray-500 dark:text-gray-400 text-sm">
-          Powered by DigitalJS & Gemini AI
-        </footer>
-      </div>
+      <footer className="w-full py-6 text-center text-sm text-muted-foreground">
+        Powered by DigitalJS & Gemini AI
+      </footer>
     </main>
   );
 }
