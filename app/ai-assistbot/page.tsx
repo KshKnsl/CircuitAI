@@ -15,22 +15,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { ExternalLink, HelpCircle, Code } from "lucide-react";
+import Link from "next/link";
 
 const initialCircuitJson = {
   devices: {
-    dev0: { type: "Button", label: "Input", net: "in", order: 0, bits: 1 },
-    dev1: { type: "Lamp", label: "Hello World!!", net: "out", order: 1, bits: 1 },
+    dev0: { type: "Button", label: "Input" },
+    dev1: { type: "Lamp", label: "Output" }
   },
   connectors: [
     { to: { id: "dev1", port: "in" }, from: { id: "dev0", port: "out" }, name: "processing..." },
   ],
   subcircuits: {},
 };
+
 interface ChatMessage {
   sender: 'user' | 'ai' | 'system';
   text: string;
   isLoading?: boolean;
 }
+
 const AiAssistBotPage = () => {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -41,6 +47,10 @@ const AiAssistBotPage = () => {
 
   const [currentCircuitJson, setCurrentCircuitJson] = useState<object | null>(null);
   const [isCircuitOpen, setIsCircuitOpen] = useState(false);
+  const [jsonInput, setJsonInput] = useState("");
+  const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
+  const [jsonError, setJsonError] = useState("");
+  const [isViewJsonDialogOpen, setIsViewJsonDialogOpen] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,6 +108,27 @@ const AiAssistBotPage = () => {
     setChatMessages(prev => [...prev, { sender: 'system', text: "Circuit cleared." }]);
   };
 
+  const handleJsonSubmit = () => {
+    try {
+      const parsedJson = JSON.parse(jsonInput);
+      
+      // Basic validation to check for required structure
+      if (!parsedJson.devices || typeof parsedJson.devices !== 'object') {
+        throw new Error("JSON must contain a 'devices' object");
+      }
+      if (!parsedJson.connectors || !Array.isArray(parsedJson.connectors)) {
+        throw new Error("JSON must contain a 'connectors' array");
+      }
+
+      setCurrentCircuitJson(parsedJson);
+      setIsJsonDialogOpen(false);
+      setJsonError("");
+      setChatMessages(prev => [...prev, { sender: 'system', text: "Circuit loaded from JSON." }]);
+    } catch (error) {
+      setJsonError((error as Error).message || "Invalid JSON format");
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-screen max-h-screen overflow-hidden">
       <div className="md:hidden flex items-center justify-center p-4">
@@ -120,6 +151,83 @@ const AiAssistBotPage = () => {
         </AlertDialog>
       </div>
       <div className="flex-grow flex flex-col overflow-auto p-4 md:block hidden">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <Link href="/docs" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+              <HelpCircle size={16} />
+              <span>Documentation</span>
+            </Link>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* View JSON Dialog */}
+            <AlertDialog open={isViewJsonDialogOpen} onOpenChange={setIsViewJsonDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={!currentCircuitJson}>
+                  <Code size={16} className="mr-1" />
+                  View JSON
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-3xl max-h-[80vh]">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Circuit JSON</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Current circuit representation in JSON format
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="overflow-auto max-h-[60vh]">
+                  <pre className="bg-muted p-4 rounded-md text-sm font-mono whitespace-pre-wrap overflow-x-auto">
+                    {currentCircuitJson ? JSON.stringify(currentCircuitJson, null, 2) : "No circuit available"}
+                  </pre>
+                </div>
+                <AlertDialogFooter className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      if (currentCircuitJson) {
+                        navigator.clipboard.writeText(JSON.stringify(currentCircuitJson, null, 2));
+                      }
+                    }}
+                    disabled={!currentCircuitJson}
+                  >
+                    Copy to Clipboard
+                  </Button>
+                  <AlertDialogCancel>Close</AlertDialogCancel>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            {/* Paste JSON Dialog - existing code */}
+            <AlertDialog open={isJsonDialogOpen} onOpenChange={setIsJsonDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">Paste JSON</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-2xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Enter Circuit JSON</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Paste your DigitalJS circuit JSON here. This will replace the current circuit.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-4">
+                  <Textarea 
+                    value={jsonInput} 
+                    onChange={(e) => setJsonInput(e.target.value)}
+                    placeholder='{"devices":{"dev0":{"type":"Button","label":"Input"}},"connectors":[...]}'
+                    className="min-h-[200px] font-mono text-sm"
+                  />
+                  {jsonError && <p className="text-sm text-destructive">{jsonError}</p>}
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setJsonError("")}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleJsonSubmit}>Apply JSON</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button variant="outline" size="sm" onClick={handleClearCircuit} disabled={!currentCircuitJson && !isGenerating}>
+              Clear
+            </Button>
+          </div>
+        </div>
         <div className="flex-grow flex items-center justify-center">
           <div className="w-full max-w-5xl mx-auto bg-background rounded-lg shadow border border-border p-4">
             <DigitalCircuitViewer

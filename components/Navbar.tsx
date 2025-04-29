@@ -11,8 +11,8 @@ const Navbar = () => {
         </div>
         <div className="flex items-center space-x-6">
           <Link href="/ai-assistbot">AI Circuit Builder</Link>
-          <Link href="/full-adder">Full Adder</Link>
-          <Link href="/docs/digitaljs-overview">Documentation</Link>
+          <Link href="/full-adder">Examples</Link>
+          <Link href="/docs">Documentation</Link>
         </div>
       </div>
     </nav>
