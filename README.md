@@ -2,26 +2,28 @@
 <!-- [![Build Status](<badge-url>)](<link-url>) -->
 <!-- [![License: MIT](<badge-url>)](<link-url>) -->
 
-# CircuitsAI
+# CircuitAI
 
-This project is an AI-powered circuit creator that leverages DigitalJS for circuit simulation and visualization. Built with Next.js and Turbopack for rapid development, it provides an interactive and user-friendly interface for designing and simulating electronic circuits using natural language prompts or guided design flows.
+This project is an AI-powered circuit creator that leverages Digitaljs for circuit simulation and visualisation. It provides an interactive and user-friendly interface for designing and simulating electronic circuits using natural language prompts or guided design flows.
 
 ## Features
 - **AI-Assisted Design:** Describe circuit requirements in natural language, and the AI suggests components and connections.
-- **Interactive Simulation:** Real-time circuit simulation powered by DigitalJS. Visualize signal flow and component states.
+- **Interactive Simulation:** Real-time circuit simulation powered by Digitaljs. Visualise signal flow and component states.
 - **Component Library:** Includes a basic library of digital logic gates and components. (Expandable)
 - **Drag-and-Drop Interface:** Easily place and connect components on the canvas. (If applicable)
 - **Responsive UI:** Built with React and Tailwind CSS for a seamless experience across devices.
-- **Fast Development:** Leverages Next.js and Turbopack for quick builds and hot reloading.
 
 ## Installation
 
 1. Clone the repository:
-2. Install dependencies:
+   ```
+   https://github.com/KshKnsl/CircuitAI.git
+   ```
+3. Install dependencies:
    ```
    npm install
    ```
-3. Start the development server:
+4. Start the development server:
    ```
    npm run dev
    ```
@@ -31,12 +33,11 @@ This project is an AI-powered circuit creator that leverages DigitalJS for circu
 1.  **Start the Application:** Run `npm run dev` and open `http://localhost:3000` (or the specified port) in your browser.
 2.  **Design:**
     *   Use the input field to describe the circuit you want to build (e.g., "Create a 2-input AND gate connected to an LED").
-    *   Alternatively, use the component panel (if available) to drag and drop components onto the canvas.
     *   Connect components by clicking and dragging between ports.
 3.  **Simulate:**
     *   Click the "Simulate" button (or observe real-time simulation).
     *   Interact with input elements (like switches) to see how the circuit behaves.
-    *   Observe the visualization provided by DigitalJS.
+    *   Observe the visualisation provided by Digitaljs.
 4.  **Modify & Iterate:** Refine your design based on simulation results.
 
 ## Project Structure
@@ -47,9 +48,8 @@ This project is an AI-powered circuit creator that leverages DigitalJS for circu
 ├── src/
 │   ├── app/            # Next.js App Router pages and layouts
 │   ├── components/     # Reusable React components (UI, circuit elements)
-│   ├── lib/            # Core logic, utilities, AI integration, DigitalJS wrapper
 │   └── styles/         # Global styles, Tailwind configuration
-├── .env.local          # Environment variables (API keys, etc. - DO NOT COMMIT)
+├── .env                # Environment variables (API keys)
 ├── next.config.mjs     # Next.js configuration
 ├── package.json        # Project dependencies and scripts
 └── README.md           # This file
@@ -59,7 +59,6 @@ This project is an AI-powered circuit creator that leverages DigitalJS for circu
 - **Frontend:** Next.js, React, Tailwind CSS
 - **Simulation:** DigitalJS
 - **AI:** Gemini Ai API
-- **Development:** Node.js, npm, Turbopack
 
 ## Configuration
 
