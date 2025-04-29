@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CircuitBoard, Code, FlaskConical, ArrowRight } from "lucide-react";
+import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -16,8 +17,15 @@ export default function Home() {
       <section className="w-full py-12 md:py-24 lg:py-32 border-b">
         <div className="container px-4 md:px-6 mx-auto flex flex-col items-center text-center gap-4">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-            CircuitsAI
+            CircuitAi
           </h1>
+          <Image
+            src="/logo.png"
+            alt="CircuitAI Logo"
+            width={200}
+            height={200}
+            className="mb-4"
+          />
           <p className="max-w-[700px] text-lg md:text-xl text-muted-foreground">
             The AI-powered logic gate simulator – design, simulate, and learn digital circuits with ease.
           </p>

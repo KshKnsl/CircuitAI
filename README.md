@@ -2,7 +2,7 @@
 <!-- [![Build Status](<badge-url>)](<link-url>) -->
 <!-- [![License: MIT](<badge-url>)](<link-url>) -->
 
-# CircuitAI
+# CircuitAi
 
 This project is an AI-powered circuit creator that leverages Digitaljs for circuit simulation and visualisation. It provides an interactive and user-friendly interface for designing and simulating electronic circuits using natural language prompts or guided design flows.
 

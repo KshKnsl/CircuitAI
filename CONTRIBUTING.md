@@ -1,4 +1,4 @@
-# Contributing to CircuitsAI
+# Contributing to CircuitAi
 
 First off, thank you for considering contributing! Your help is appreciated.
 

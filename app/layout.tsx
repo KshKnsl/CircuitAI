@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CircuitsAI - AI-Powered Circuit Design & Simulation",
-  description: "Design, simulate, and learn digital circuits with ease using CircuitsAI, the AI-powered logic gate simulator.",
+  title: "CircuitAi - AI-Powered Circuit Design & Simulation",
+  description: "Design, simulate, and learn digital circuits with ease using CircuitAi, the AI-powered logic gate simulator.",
 };
 
 export default function RootLayout({
