@@ -13,8 +13,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CircuitAi - AI-Powered Circuit Design & Simulation",
-  description: "Design, simulate, and learn digital circuits with ease using CircuitAi, the AI-powered logic gate simulator.",
+  title: "Circuit AI - Interactive Circuit Design Tool",
+  description: "Create, simulate, and analyze electronic circuits with AI-powered tools. Design digital and analog circuits easily with our interactive platform.",
+  keywords: "circuit design, electronic circuits, AI circuit creator, digital circuits, analog circuits, circuit simulation, circuit analysis, electronics learning tool",
+  verification: {
+    google: "tUtKF9kdLnzHmzp_zXdEg-XXGifxAxknwLTyUuWgzuQ",
+  },
+  openGraph: {
+    title: "Circuit AI - AI-Powered Circuit Creator",
+    description: "Design and simulate electronic circuits with advanced AI assistance. The perfect tool for students, hobbyists, and professionals.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -24,6 +33,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta
+          name="google-site-verification"
+          content="tUtKF9kdLnzHmzp_zXdEg-XXGifxAxknwLTyUuWgzuQ"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

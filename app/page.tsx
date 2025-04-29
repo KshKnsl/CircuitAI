@@ -9,10 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { CircuitBoard, Code, FlaskConical, ArrowRight } from "lucide-react";
 import Image from 'next/image';
+import Navbar from "@/components/Navbar";
 
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col bg-background">
+      <Navbar />
       {/* Hero Section */}
       <section className="w-full py-12 md:py-24 lg:py-32 border-b">
         <div className="container px-4 md:px-6 mx-auto flex flex-col items-center text-center gap-4">
@@ -31,9 +33,9 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 mt-6">
             <Button asChild size="lg" className="gap-2">
-              <Link href="/ai-assistbot">
+              <a href="/ai-assistbot">
                 Launch AI Circuit Builder <ArrowRight className="h-4 w-4" />
-              </Link>
+              </a>
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link href="/full-adder">
@@ -99,6 +101,7 @@ export default function Home() {
 
       <footer className="w-full py-6 text-center text-sm text-muted-foreground">
         Powered by DigitalJS & Gemini AI
+        <a href="https://www.producthunt.com/posts/circuitai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-circuitai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=958872&theme=light&t=1745907417856" alt="CircuitAi - Instantly&#0032;Create&#0032;Digital&#0032;Logic&#0032;Circuits&#0032;with&#0032;AI | Product Hunt" style={{ width: '250px', height: '54px' }} width="250" height="54" /></a>
       </footer>
     </main>
   );
