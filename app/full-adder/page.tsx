@@ -228,6 +228,16 @@ const FullAdderPage = () => {
               </Link>
             </nav>
           </div>
+          <div className="flex items-center">
+            <a 
+              href="https://github.com/KshKnsl" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:text-primary"
+            >
+              Created by Kush Kansal
+            </a>
+          </div>
         </div>
       </header>
 
@@ -324,6 +334,12 @@ const FullAdderPage = () => {
           </div>
         </div>
       </main>
+
+      <div className="mt-8 text-center border-t border-border py-4">
+        <p className="text-sm text-muted-foreground">
+          CircuitAi by <a href="https://github.com/KshKnsl" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Kush Kansal</a>
+        </p>
+      </div>
     </div>
   );
 };

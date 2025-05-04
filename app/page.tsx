@@ -99,9 +99,16 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="w-full py-6 text-center text-sm text-muted-foreground">
-        Powered by DigitalJS & Gemini AI
-        <a href="https://www.producthunt.com/posts/circuitai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-circuitai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=958872&theme=light&t=1745907417856" alt="CircuitAi - Instantly&#0032;Create&#0032;Digital&#0032;Logic&#0032;Circuits&#0032;with&#0032;AI | Product Hunt" style={{ width: '250px', height: '54px' }} width="250" height="54" /></a>
+      <footer className="w-full py-6 text-center border-t border-border">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            Powered by DigitalJS & Gemini AI
+            <a href="https://www.producthunt.com/posts/circuitai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-circuitai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=958872&theme=light&t=1745907417856" alt="CircuitAi - Instantly&#0032;Create&#0032;Digital&#0032;Logic&#0032;Circuits&#0032;with&#0032;AI | Product Hunt" style={{ width: '250px', height: '54px' }} width="250" height="54" /></a>
+          </div>
+          <div className="text-sm font-medium">
+            Created by <a href="https://github.com/KshKnsl" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Kush Kansal</a>
+          </div>
+        </div>
       </footer>
     </main>
   );

@@ -447,8 +447,8 @@ circuit.start();`}</code></pre>
               <p className="text-sm text-muted-foreground">
                 Documentation for <a href="https://github.com/tilk/digitaljs" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">DigitalJS</a>
               </p>
-              <div className="text-sm text-muted-foreground">
-                Last updated: {new Date().toLocaleDateString()}
+              <div className="flex items-center text-sm text-muted-foreground">
+                <span>Created by <a href="https://github.com/KshKnsl" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Kush Kansal</a></span>
               </div>
             </div>
           </div>

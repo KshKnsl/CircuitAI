@@ -17,8 +17,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, HelpCircle, Code } from "lucide-react";
+import { ExternalLink, HelpCircle, Code, Github, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
+import { SpeechDebugger } from "@/components/SpeechDebugger";
+
+// Add these type definitions
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+}
 
 const initialCircuitJson = {
   devices: {
@@ -51,14 +63,244 @@ const AiAssistBotPage = () => {
   const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
   const [jsonError, setJsonError] = useState("");
   const [isViewJsonDialogOpen, setIsViewJsonDialogOpen] = useState(false);
+  
+  // Speech recognition states
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  
+  // Speech synthesis states
+  const [isSpeechSynthesisSupported, setIsSpeechSynthesisSupported] = useState(false);
+  const [speakEnabled, setSpeakEnabled] = useState(false);
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+
+  // Add additional debug state
+  const [speechDebugInfo, setSpeechDebugInfo] = useState<string>("");
+
+  // Initialize speech recognition and synthesis
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Check for speech recognition support
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        setIsSpeechSupported(true);
+      }
+      
+      // Check for speech synthesis support
+      if (window.speechSynthesis) {
+        setIsSpeechSynthesisSupported(true);
+        synthRef.current = window.speechSynthesis;
+      }
+    }
+  }, []);
+  
+  // Setup speech recognition when voice is enabled
+  useEffect(() => {
+    if (!voiceEnabled || typeof window === 'undefined') return;
+    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechDebugInfo("Speech recognition not available in this browser");
+      return;
+    }
+    
+    try {
+      // Create a new recognition instance
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+      setSpeechDebugInfo("Speech recognition initialized");
+      
+      recognitionRef.current.onstart = () => {
+        setSpeechDebugInfo("Recognition started");
+        setIsListening(true);
+      };
+      
+      recognitionRef.current.onresult = (event: any) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+            setSpeechDebugInfo(`Final transcript: ${finalTranscript}`);
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+            setSpeechDebugInfo(`Interim transcript: ${interimTranscript}`);
+          }
+        }
+        
+        if (finalTranscript) {
+          setChatInput(finalTranscript);
+        }
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        setSpeechDebugInfo(`Speech recognition error: ${event.error}`);
+        console.error("Speech recognition error:", event);
+        setIsListening(false);
+      };
+      
+      recognitionRef.current.onend = () => {
+        setSpeechDebugInfo("Recognition ended");
+        setIsListening(false);
+      };
+    } catch (error) {
+      setSpeechDebugInfo(`Error creating speech recognition: ${error}`);
+      console.error("Error creating speech recognition:", error);
+    }
+    
+    return () => {
+      if (recognitionRef.current) {
+        // Clean up event handlers
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onstart = null;
+        
+        try {
+          recognitionRef.current.stop();
+          setSpeechDebugInfo("Recognition stopped and cleaned up");
+        } catch (err) {
+          setSpeechDebugInfo(`Error stopping recognition: ${err}`);
+        }
+      }
+    };
+  }, [voiceEnabled]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
+  
+  // Speech synthesis for AI responses
+  useEffect(() => {
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    
+    if (speakEnabled && 
+        isSpeechSynthesisSupported && 
+        synthRef.current && 
+        lastMessage && 
+        lastMessage.sender === 'ai' && 
+        !lastMessage.isLoading) {
+      // Cancel any ongoing speech
+      synthRef.current.cancel();
+      
+      // Create a new utterance
+      const utterance = new SpeechSynthesisUtterance(lastMessage.text);
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      
+      // Speak the response
+      synthRef.current.speak(utterance);
+    }
+  }, [chatMessages, speakEnabled, isSpeechSynthesisSupported]);
+
+  const toggleListening = () => {
+    if (!isSpeechSupported || !voiceEnabled) {
+      setSpeechDebugInfo("Speech recognition not supported or not enabled");
+      return;
+    }
+    
+    // If recognition instance doesn't exist, create one on-demand
+    if (!recognitionRef.current) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          recognitionRef.current = new SpeechRecognition();
+          recognitionRef.current.continuous = true;
+          recognitionRef.current.interimResults = true;
+          recognitionRef.current.lang = 'en-US';
+          
+          recognitionRef.current.onresult = (event: any) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+              }
+            }
+            
+            if (finalTranscript) {
+              setChatInput(finalTranscript);
+            }
+          };
+          
+          recognitionRef.current.onerror = (event: any) => {
+            setSpeechDebugInfo(`Error: ${event.error}`);
+            setIsListening(false);
+          };
+          
+          recognitionRef.current.onend = () => {
+            setIsListening(false);
+          };
+          
+          setSpeechDebugInfo("Created speech recognition on-demand");
+        } catch (error) {
+          setSpeechDebugInfo(`Failed to create speech recognition: ${error}`);
+          return;
+        }
+      } else {
+        setSpeechDebugInfo("Speech recognition API not available");
+        return;
+      }
+    }
+    
+    if (isListening) {
+      try {
+        recognitionRef.current.stop();
+        setSpeechDebugInfo("Stopping recognition");
+      } catch (err) {
+        setSpeechDebugInfo(`Error stopping recognition: ${err}`);
+      }
+    } else {
+      try {
+        recognitionRef.current.start();
+        setSpeechDebugInfo("Starting recognition");
+      } catch (error) {
+        setSpeechDebugInfo(`Error starting recognition: ${error}`);
+      }
+    }
+  };
+  
+  const toggleVoiceEnabled = (checked: boolean) => {
+    setVoiceEnabled(checked);
+    
+    // Stop listening if turning voice off
+    if (!checked && isListening && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (err) {
+        console.error("Error stopping speech recognition:", err);
+      }
+      setIsListening(false);
+    }
+  };
+  
+  const toggleSpeakEnabled = (checked: boolean) => {
+    setSpeakEnabled(checked);
+    
+    // Stop speaking if turning off
+    if (!checked && synthRef.current) {
+      synthRef.current.cancel();
+    }
+  };
 
   const handleSendMessage = async () => {
     const messageText = chatInput.trim();
     if (!messageText || isGenerating) return;
+
+    // Stop listening while generating
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+    
+    // Stop speaking before generating new response
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
 
     const newUserMessage: ChatMessage = { sender: 'user', text: messageText };
     setChatMessages(prev => [...prev, newUserMessage]);
@@ -152,11 +394,20 @@ const AiAssistBotPage = () => {
       </div>
       <div className="flex-grow flex flex-col overflow-auto p-4 md:block hidden">
         <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <Link href="/docs" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
               <HelpCircle size={16} />
               <span>Documentation</span>
             </Link>
+            <a 
+              href="https://github.com/KshKnsl" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+            >
+              <Github size={16} />
+              <span>Created by Kush Kansal</span>
+            </a>
           </div>
           <div className="flex items-center gap-2">
             {/* View JSON Dialog */}
@@ -196,7 +447,7 @@ const AiAssistBotPage = () => {
               </AlertDialogContent>
             </AlertDialog>
             
-            {/* Paste JSON Dialog - existing code */}
+            {/* Paste JSON Dialog */}
             <AlertDialog open={isJsonDialogOpen} onOpenChange={setIsJsonDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm">Paste JSON</Button>
@@ -239,12 +490,71 @@ const AiAssistBotPage = () => {
 
       <div className="w-full md:w-96 border-l border-border flex flex-col h-full max-h-screen bg-muted/30">
         <Card className="flex flex-col flex-grow h-full border-0 rounded-none bg-transparent">
-          <CardHeader className="border-b border-border flex flex-row items-center justify-between">
-            <CardTitle>AI Circuit Assistant</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleClearCircuit} disabled={!currentCircuitJson && !isGenerating}>
-              Clear Circuit
-            </Button>
+          <CardHeader className="border-b border-border">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>AI Circuit Assistant</CardTitle>
+                <p className="text-xs text-muted-foreground">by <a href="https://github.com/KshKnsl" target="_blank" rel="noopener noreferrer" className="hover:underline">Kush Kansal</a></p>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleClearCircuit} disabled={!currentCircuitJson && !isGenerating}>
+                Clear Circuit
+              </Button>
+            </div>
+            
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+              <TooltipProvider>
+                <div className="flex items-center gap-4">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="voice-input"
+                          checked={voiceEnabled}
+                          onCheckedChange={toggleVoiceEnabled}
+                          disabled={!isSpeechSupported}
+                        />
+                        <Label htmlFor="voice-input" className="cursor-pointer text-sm">Voice Input</Label>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isSpeechSupported 
+                        ? "Enable voice commands" 
+                        : "Speech recognition not supported in this browser"}
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="voice-output"
+                          checked={speakEnabled}
+                          onCheckedChange={toggleSpeakEnabled}
+                          disabled={!isSpeechSynthesisSupported}
+                        />
+                        <Label htmlFor="voice-output" className="cursor-pointer text-sm">Voice Output</Label>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isSpeechSynthesisSupported 
+                        ? "Read responses aloud" 
+                        : "Speech synthesis not supported in this browser"}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            </div>
+
+            {/* Speech debug info (only visible when voice input is enabled) */}
+            {voiceEnabled && speechDebugInfo && (
+              <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
+                <p>Status: {isListening ? "Listening" : "Not listening"}</p>
+                <p>{speechDebugInfo}</p>
+                <p className="text-xs opacity-70">Browser: {typeof navigator !== 'undefined' ? navigator.userAgent.split(' ').slice(-3).join(' ') : ''}</p>
+              </div>
+            )}
           </CardHeader>
+          
           <CardContent className="flex-grow overflow-y-auto p-4 space-y-4">
             {chatMessages.map((msg, index) => (
               <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -268,18 +578,40 @@ const AiAssistBotPage = () => {
             ))}
             <div ref={messagesEndRef} />
           </CardContent>
+          
           <CardFooter className="border-t border-border p-4 bg-background">
             <div className="flex w-full space-x-2">
-              <Input
-                type="text"
-                placeholder={"Describe a circuit..."}
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                disabled={isGenerating}
-                className="flex-grow"
-              />
-              <Button onClick={handleSendMessage} disabled={isGenerating || !chatInput.trim()}>
+              <div className="relative flex-grow">
+                <Input
+                  type="text"
+                  placeholder={isListening ? "Listening..." : "Describe a circuit..."}
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  disabled={isGenerating || isListening}
+                  className={`flex-grow pr-10 ${isListening ? 'bg-primary/10' : ''}`}
+                />
+                {voiceEnabled && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="absolute right-1 top-1 h-7 w-7"
+                    onClick={toggleListening}
+                    disabled={isGenerating || !isSpeechSupported}
+                  >
+                    {isListening ? (
+                      <MicOff size={16} className="text-destructive" />
+                    ) : (
+                      <Mic size={16} className={isSpeechSupported ? "text-primary" : "text-muted-foreground"} />
+                    )}
+                  </Button>
+                )}
+              </div>
+              <Button 
+                onClick={handleSendMessage} 
+                disabled={isGenerating || (!chatInput.trim() && !isListening)}
+              >
                 {isGenerating ? 'Generating...' : 'Send'}
               </Button>
             </div>
@@ -290,4 +622,35 @@ const AiAssistBotPage = () => {
   );
 };
 
-export default AiAssistBotPage;
+const AiAssistBotWithDebug = () => {
+  // Check if we're in development mode
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  return (
+    <>
+      <AiAssistBotPage />
+      {isDev && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Button
+            size="sm"
+            variant="outline"
+            className="mb-2"
+            onClick={() => {
+              const debugEl = document.getElementById('speech-debugger');
+              if (debugEl) {
+                debugEl.style.display = debugEl.style.display === 'none' ? 'block' : 'none';
+              }
+            }}
+          >
+            Speech Debug
+          </Button>
+          <div id="speech-debugger" className="hidden">
+            <SpeechDebugger />
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default AiAssistBotWithDebug;
