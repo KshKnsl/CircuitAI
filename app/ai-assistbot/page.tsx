@@ -27,8 +27,8 @@ import { SpeechDebugger } from "@/components/SpeechDebugger";
 // Add these type definitions
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
 }
 
@@ -372,7 +372,7 @@ const AiAssistBotPage = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen max-h-screen overflow-hidden">
+    <div className="flex flex-col md:flex-row h-[100dvh] max-h-screen overflow-hidden bg-background">
       <div className="md:hidden flex items-center justify-center p-4">
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -392,6 +392,7 @@ const AiAssistBotPage = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+      {/* Main circuit viewer (desktop) */}
       <div className="flex-grow flex flex-col overflow-auto p-4 md:block hidden">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-4">
@@ -480,17 +481,16 @@ const AiAssistBotPage = () => {
           </div>
         </div>
         <div className="flex-grow flex items-center justify-center">
-          <div className="w-full max-w-5xl mx-auto bg-background rounded-lg shadow border border-border p-4">
-            <DigitalCircuitViewer
-              circuitJson={currentCircuitJson || initialCircuitJson}
-            />
-          </div>
+          <DigitalCircuitViewer
+            circuitJson={currentCircuitJson || initialCircuitJson}
+          />
         </div>
       </div>
 
+      {/* Chat/assistant panel */}
       <div className="w-full md:w-96 border-l border-border flex flex-col h-full max-h-screen bg-muted/30">
         <Card className="flex flex-col flex-grow h-full border-0 rounded-none bg-transparent">
-          <CardHeader className="border-b border-border">
+          <CardHeader className="border-b border-border bg-card/80">
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle>AI Circuit Assistant</CardTitle>
@@ -500,7 +500,6 @@ const AiAssistBotPage = () => {
                 Clear Circuit
               </Button>
             </div>
-            
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
               <TooltipProvider>
                 <div className="flex items-center gap-4">
@@ -544,7 +543,6 @@ const AiAssistBotPage = () => {
                 </div>
               </TooltipProvider>
             </div>
-
             {/* Speech debug info (only visible when voice input is enabled) */}
             {voiceEnabled && speechDebugInfo && (
               <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
@@ -554,8 +552,7 @@ const AiAssistBotPage = () => {
               </div>
             )}
           </CardHeader>
-          
-          <CardContent className="flex-grow overflow-y-auto p-4 space-y-4">
+          <CardContent className="flex-grow overflow-y-auto p-4 space-y-4 bg-background/80">
             {chatMessages.map((msg, index) => (
               <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`p-2 px-3 rounded-lg max-w-[85%] shadow-sm ${
@@ -578,8 +575,7 @@ const AiAssistBotPage = () => {
             ))}
             <div ref={messagesEndRef} />
           </CardContent>
-          
-          <CardFooter className="border-t border-border p-4 bg-background">
+          <CardFooter className="border-t border-border p-4 bg-background/90">
             <div className="flex w-full space-x-2">
               <div className="relative flex-grow">
                 <Input
@@ -611,6 +607,7 @@ const AiAssistBotPage = () => {
               <Button 
                 onClick={handleSendMessage} 
                 disabled={isGenerating || (!chatInput.trim() && !isListening)}
+                className="shadow"
               >
                 {isGenerating ? 'Generating...' : 'Send'}
               </Button>

@@ -114,9 +114,20 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/50 transition-colors duration-300;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans min-h-screen antialiased transition-colors duration-300;
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+  }
+  html {
+    scroll-behavior: smooth;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    transition: background 0.3s, color 0.3s;
+  }
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
   }
 }

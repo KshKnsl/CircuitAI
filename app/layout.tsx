@@ -26,13 +26,16 @@ export const metadata: Metadata = {
   },
 };
 
+import Navbar from "@/components/Navbar";
+import React from "react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta
           name="google-site-verification"
@@ -40,9 +43,25 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300`}
       >
-        {children}
+        <Navbar />
+        <div className="flex-1 flex flex-col">
+          {children}
+        </div>
+        <footer className="w-full py-6 text-center border-t border-border bg-card">
+          <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Powered by DigitalJS & Gemini AI
+              <a href="https://www.producthunt.com/posts/circuitai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-circuitai" target="_blank" rel="noopener noreferrer">
+                <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=958872&theme=light&t=1745907417856" alt="CircuitAi - Instantly Create Digital Logic Circuits with AI | Product Hunt" style={{ width: '250px', height: '54px' }} width="250" height="54" />
+              </a>
+            </div>
+            <div className="text-sm font-medium">
+              Created by <a href="https://github.com/KshKnsl" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Kush Kansal</a>
+            </div>
+          </div>
+        </footer>
       </body>
     </html>
   );

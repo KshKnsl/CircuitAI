@@ -154,7 +154,7 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
     const controlsDisabled = !scriptLoaded || !circuitJson || isLoading || !!errorMsg;
 
     return (
-        <div className="flex flex-col gap-4 w-full h-auto box-border">
+        <div className="w-full max-w-3xl mx-auto bg-card/90 rounded-xl shadow-lg p-4 md:p-6 flex flex-col gap-6 border border-border transition-all">
             <Script
                 src="/digital.js"
                 strategy="lazyOnload"
@@ -169,17 +169,25 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
             />
 
             <div
-                className="h-[500px] mx-auto bg-background flex items-center justify-center text-muted-foreground"
+                className="h-[300px] sm:h-[400px] md:h-[500px] w-full bg-background rounded-lg flex items-center justify-center text-muted-foreground border border-border transition-all"
             >
                 {showPlaceholder ? (
-                    <p className="p-4 text-center">{getPlaceholderText()}</p>
+                    <div className="flex flex-col items-center justify-center w-full h-full gap-2">
+                        {isLoading && !errorMsg && (
+                            <svg className="animate-spin h-8 w-8 text-primary mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                            </svg>
+                        )}
+                        <p className={`p-4 text-center text-base md:text-lg ${errorMsg ? 'text-destructive' : ''}`}>{getPlaceholderText()}</p>
+                    </div>
                 ) : (
                     <div ref={paperRef} id="paper-main" className="w-full h-full relative" />
                 )}
             </div>
 
-            <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-stretch sm:items-center justify-center">
-                <div className="flex items-center space-x-2 p-2 border border-input rounded sm:border-none sm:p-0">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-stretch sm:items-center justify-center mt-2">
+                <div className="flex items-center space-x-2 p-2 border border-input rounded-lg bg-muted/50 transition-shadow hover:shadow-md focus-within:ring-2 focus-within:ring-primary">
                     <Checkbox
                         id="fixed-mode-main"
                         checked={isFixed}
@@ -187,7 +195,7 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
                         disabled={controlsDisabled}
                         aria-label="Toggle Fixed Mode"
                     />
-                    <Label htmlFor="fixed-mode-main" className="cursor-pointer text-xs" title="Fixed Mode">
+                    <Label htmlFor="fixed-mode-main" className="cursor-pointer text-xs select-none" title="Fixed Mode">
                         <Lock className="h-4 w-4 inline mr-1" /> Fix Layout
                     </Label>
                 </div>
@@ -195,7 +203,7 @@ const DigitalCircuitViewer: React.FC<DigitalCircuitViewerProps> = ({ circuitJson
                 <Button
                     variant="secondary"
                     onClick={handleSerializeReload}
-                    className="px-3 py-1.5 text-sm"
+                    className="px-3 py-1.5 text-sm shadow transition-transform hover:-translate-y-0.5 hover:shadow-lg focus:ring-2 focus:ring-primary"
                     disabled={controlsDisabled}
                     title="Serialize & Reload"
                     aria-label="Serialize and Reload Circuit"

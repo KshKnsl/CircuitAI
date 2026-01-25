@@ -9,16 +9,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { CircuitBoard, Code, FlaskConical, ArrowRight } from "lucide-react";
 import Image from 'next/image';
-import Navbar from "@/components/Navbar";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col bg-background">
-      <Navbar />
+    <main className="flex flex-col flex-1 w-full bg-background">
       {/* Hero Section */}
-      <section className="w-full py-12 md:py-24 lg:py-32 border-b">
-        <div className="container px-4 md:px-6 mx-auto flex flex-col items-center text-center gap-4">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter text-[#0B304A]">
+      <section className="w-full py-12 sm:py-16 md:py-28 lg:py-36 border-b bg-gradient-to-b from-primary/5 to-background">
+        <div className="container px-4 md:px-6 mx-auto flex flex-col items-center text-center gap-6">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter text-primary drop-shadow-sm">
             CircuitAi
           </h1>
           <Image
@@ -26,18 +24,18 @@ export default function Home() {
             alt="CircuitAI Logo"
             width={200}
             height={200}
-            className="mb-4"
+            className="mb-4 rounded-xl shadow-lg"
           />
-          <p className="max-w-[700px] text-lg md:text-xl text-muted-foreground">
+          <p className="max-w-[700px] text-xl md:text-2xl text-muted-foreground">
             The AI-powered logic gate simulator – design, simulate, and learn digital circuits with ease.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 mt-6">
-            <Button asChild size="lg" className="gap-2">
+          <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full max-w-md mx-auto">
+            <Button asChild size="lg" className="gap-2 shadow-lg">
               <a href="/ai-assistbot">
                 Launch AI Circuit Builder <ArrowRight className="h-4 w-4" />
               </a>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="outline" size="lg" className="shadow">
               <Link href="/full-adder">
                 View Full Adder Example
               </Link>
@@ -47,9 +45,9 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="container px-4 md:px-6 py-12 mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="flex flex-col h-full">
+      <section className="container px-4 md:px-6 py-12 sm:py-16 mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+          <Card className="flex flex-col h-full bg-card/80 border border-border shadow-md rounded-xl">
             <CardHeader>
               <CircuitBoard className="h-8 w-8 mb-2 text-primary" />
               <CardTitle>Interactive Visualization</CardTitle>
@@ -65,7 +63,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="flex flex-col h-full">
+          <Card className="flex flex-col h-full bg-card/80 border border-border shadow-md rounded-xl">
             <CardHeader>
               <Code className="h-8 w-8 mb-2 text-primary" />
               <CardTitle>AI Circuit Generation</CardTitle>
@@ -81,7 +79,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="flex flex-col h-full">
+          <Card className="flex flex-col h-full bg-card/80 border border-border shadow-md rounded-xl">
             <CardHeader>
               <FlaskConical className="h-8 w-8 mb-2 text-primary" />
               <CardTitle>Simulate and Learn</CardTitle>
@@ -98,18 +96,6 @@ export default function Home() {
           </Card>
         </div>
       </section>
-
-      <footer className="w-full py-6 text-center border-t border-border">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-sm text-muted-foreground">
-            Powered by DigitalJS & Gemini AI
-            <a href="https://www.producthunt.com/posts/circuitai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-circuitai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=958872&theme=light&t=1745907417856" alt="CircuitAi - Instantly&#0032;Create&#0032;Digital&#0032;Logic&#0032;Circuits&#0032;with&#0032;AI | Product Hunt" style={{ width: '250px', height: '54px' }} width="250" height="54" /></a>
-          </div>
-          <div className="text-sm font-medium">
-            Created by <a href="https://github.com/KshKnsl" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Kush Kansal</a>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }
